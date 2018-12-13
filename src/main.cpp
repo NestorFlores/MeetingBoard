@@ -8,8 +8,8 @@
 // Actual device, the IC2 address may change.
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-const char *ssid =  "VP_AR_PAR_D";     // replace with your wifi ssid and wpa2 key
-const char *pass =  "VeloPar.2k17";
+const char *ssid =  "XXX";     // replace with your wifi ssid and wpa2 key
+const char *pass =  "123";
 
 WiFiClient client;
 
