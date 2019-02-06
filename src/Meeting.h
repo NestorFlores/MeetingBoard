@@ -1,6 +1,5 @@
 using namespace std;
-struct Meeting {
-   
-     int time;
+struct Meeting { 
+     unsigned long time;
      String name;
-     };
+};

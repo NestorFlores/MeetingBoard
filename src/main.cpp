@@ -7,10 +7,11 @@
 #include <sstream>
 #include <string>
 #include <Meeting.h>
+using namespace std;
 
 WiFiUDP ntpUDP;
 WiFiClient wifiClient;
-HttpClient httpClient = HttpClient(wifiClient, "192.168.40.64", 3000);
+HttpClient httpClient = HttpClient(wifiClient, "192.168.40.67", 3000);
 NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 3600, 60000);
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 const char *ssid = "VP_AR_PAR_D";
@@ -71,8 +72,13 @@ void SetupTime()
 Meeting deserializeMeeting(String fullMeetingInfo){
   Meeting m;
   String value = fullMeetingInfo.substring(0, fullMeetingInfo.indexOf(dateSeparator));
-  m.time = atoi(value.c_str())/1000;
-  m.name = fullMeetingInfo.substring(fullMeetingInfo.indexOf(dateSeparator) + 2, fullMeetingInfo.length());
+  value.trim();
+  Serial.println(value);
+  m.time = atol(value.c_str());
+  Serial.println(m.time);
+  m.name = fullMeetingInfo.substring(fullMeetingInfo.indexOf(dateSeparator) + 1);
+  m.name.replace("|", "");
+  Serial.println(m.name);
   
   return m;
 }
@@ -86,22 +92,20 @@ void FetchTodayMeetings()
 
   int statusCode = httpClient.responseStatusCode();
   String response = httpClient.responseBody();
+    Serial.println(response);
+  Serial.println(statusCode);
   short r, t = 0;
   for (int i = 0; i < response.length(); i++)
   {
     if (response.charAt(i) == meetingSeparator && i != response.length())
     {
+      Serial.println("deserializing meeting");
       meetings[t] = deserializeMeeting(response.substring(r, i));
       r = (i + 1);
       t++;
     }
   }
   
-  Serial.println(response);
-  Serial.println(statusCode);
-
-  // The begin call takes the width and height. This
-  // lcd.print(response);
 }
 
 
@@ -109,8 +113,7 @@ void FetchTodayMeetings()
 void setup()
 {
   Serial.begin(9600);
-  delay(10);
-  Serial.println("whatever");
+
   SetupScreen();
   SetupWifi();
   SetupTime();
@@ -120,26 +123,31 @@ void setup()
 Meeting getNextMeeting()
 {
   int currentTime = timeClient.getEpochTime();
+  Meeting m;
 
-  for (int i=0; i<mettingSize; i++){
+ for (int i=0; i<mettingSize; i++){
     if (meetings[i].time > currentTime){
-        return meetings[i];
+        m = meetings[i];
+        break;
     }
   }
 
+  return m;
 }
 
 void loop()
 {
   timeClient.update();
  // Serial.println(timeClient.getEpochTime());
-  delay(500);
   Meeting m = getNextMeeting();
   lcd.setCursor(0,0);
   lcd.print(m.name);
+  //Serial.println(m.name);
+  delay(500);
   lcd.setCursor(0, 1);
-  lcd.print(m.time - timeClient.getEpochTime());
-  // serialtimeClient.getEpochTime();
-  //autoScroll();
-  //handleGestureSensor();
+  int secondsToNextMeeting = m.time - timeClient.getEpochTime();
+  String timeForNextMeeting = String(secondsToNextMeeting / 60 ) +":"+ String(secondsToNextMeeting % 60);
+
+  lcd.print(timeForNextMeeting + "                            ");
+
 }
